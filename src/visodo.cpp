@@ -38,7 +38,7 @@ double getAbsoluteScale(int frame_id, int sequence_id, double z_cal)	{
   
   string line;
   int i = 0;
-  ifstream myfile ("/home/avisingh/Datasets/KITTI_VO/00.txt");
+  ifstream myfile ("/home/roque/Git/2019AffineMinimalRelative/dataset/kitti-00/00-gt.txt");
   double x =0, y=0, z = 0;
   double x_prev, y_prev, z_prev;
   if (myfile.is_open())
@@ -82,8 +82,8 @@ int main( int argc, char** argv )	{
   double scale = 1.00;
   char filename1[200];
   char filename2[200];
-  sprintf(filename1, "/home/avisingh/Datasets/KITTI_VO/00/image_2/%06d.png", 0);
-  sprintf(filename2, "/home/avisingh/Datasets/KITTI_VO/00/image_2/%06d.png", 1);
+  sprintf(filename1, "/home/roque/Git/2019AffineMinimalRelative/dataset/kitti-00/image_0/%06d.png", 0);
+  sprintf(filename2, "/home/roque/Git/2019AffineMinimalRelative/dataset/kitti-00/image_0/%06d.png", 1);
 
   char text[100];
   int fontFace = FONT_HERSHEY_PLAIN;
@@ -92,16 +92,16 @@ int main( int argc, char** argv )	{
   cv::Point textOrg(10, 50);
 
   //read the first two frames from the dataset
-  Mat img_1_c = imread(filename1);
-  Mat img_2_c = imread(filename2);
+  img_1 = imread(filename1);
+  img_2 = imread(filename2);
 
-  if ( !img_1_c.data || !img_2_c.data ) { 
+  if ( !img_1.data || !img_2.data ) { 
     std::cout<< " --(!) Error reading images " << std::endl; return -1;
   }
 
-  // we work with grayscale images
-  cvtColor(img_1_c, img_1, COLOR_BGR2GRAY);
-  cvtColor(img_2_c, img_2, COLOR_BGR2GRAY);
+  // we work with grayscale images - our are greyscale
+  // cvtColor(img_1_c, img_1, COLOR_BGR2GRAY);
+  // cvtColor(img_2_c, img_2, COLOR_BGR2GRAY);
 
   // feature detection, tracking
   vector<Point2f> points1, points2;        //vectors to store the coordinates of the feature points
@@ -136,14 +136,19 @@ int main( int argc, char** argv )	{
   Mat traj = Mat::zeros(600, 600, CV_8UC3);
 
   for(int numFrame=2; numFrame < MAX_FRAME; numFrame++)	{
-  	sprintf(filename, "/home/avisingh/Datasets/KITTI_VO/00/image_2/%06d.png", numFrame);
+  	sprintf(filename, "/home/roque/Git/2019AffineMinimalRelative/dataset/kitti-00/image_0/%06d.png", numFrame);
     //cout << numFrame << endl;
-  	Mat currImage_c = imread(filename);
-  	cvtColor(currImage_c, currImage, COLOR_BGR2GRAY);
+  	Mat currImage = imread(filename);
+  	// cvtColor(currImage_c, currImage, COLOR_BGR2GRAY);
   	vector<uchar> status;
   	featureTracking(prevImage, currImage, prevFeatures, currFeatures, status);
 
-  	E = findEssentialMat(currFeatures, prevFeatures, focal, pp, RANSAC, 0.999, 1.0, mask);
+    // Debug area
+    std::cout << "Points Size before function: " << currFeatures.size() << std::endl;
+    std::cout << "First point: " << currFeatures[1000].x << " " << currFeatures[1000].y << std::endl;
+    return 0;
+    E = findEssentialMat(currFeatures, prevFeatures, focal, pp, FOURPOINT, 0.999, 1.0, mask);
+
   	recoverPose(E, currFeatures, prevFeatures, R, t, focal, pp, mask);
 
     Mat prevPts(2,prevFeatures.size(), CV_64F), currPts(2,currFeatures.size(), CV_64F);
@@ -195,11 +200,11 @@ int main( int argc, char** argv )	{
     sprintf(text, "Coordinates: x = %02fm y = %02fm z = %02fm", t_f.at<double>(0), t_f.at<double>(1), t_f.at<double>(2));
     putText(traj, text, textOrg, fontFace, fontScale, Scalar::all(255), thickness, 8);
 
-    imshow( "Road facing camera", currImage_c );
+    imshow( "Road facing camera", currImage );
     imshow( "Trajectory", traj );
 
     waitKey(1);
-
+    cout << numFrame << endl;
   }
 
   clock_t end = clock();
